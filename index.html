@@ -153,12 +153,24 @@
         /* --- PRINT CSS --- */
         @media print {
             body { background: white; margin: 0; padding: 0; }
-            .studio-header, .sidebar { display: none !important; }
+            .studio-header, .sidebar, #toast { display: none !important; }
             .app-layout { margin: 0; height: auto; display: block; }
             .preview-area { padding: 0; background: white; display: block; }
             .report-paper { box-shadow: none; width: 100%; transform: none !important; }
             [contenteditable="true"] { border-bottom: none !important; background-color: transparent !important; }
-            @page { size: A4 portrait; margin: 0; }
+            
+            /* Fix Table Headers in Print */
+            th { 
+                background-color: var(--primary-navy) !important; 
+                color: white !important; 
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important; 
+            }
+            
+            /* Force exact A4 dimensions to prevent 3rd page spillover */
+            @page { size: A4 portrait; margin: 0mm; }
+            .cover-page { height: 297mm; padding: 50px; box-sizing: border-box; }
+            .page-content { height: 297mm; padding: 40px 40px 20px 40px; box-sizing: border-box; }
             
             /* Force background colors */
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -197,18 +209,24 @@
                     <p class="text-xs text-blue-800">Type your target and achieved numbers here to build the report.</p>
                 </div>
 
+                <!-- Template Switcher -->
+                <div class="flex bg-gray-100 p-1 rounded-lg mb-4 border border-gray-200 shadow-inner">
+                    <button id="modeSocialBtn" class="flex-1 bg-white shadow-sm py-2 text-[10px] font-bold uppercase tracking-wider rounded-md text-[#0066FF] transition-all">Social Media</button>
+                    <button id="modeScaleBtn" class="flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-md text-gray-500 hover:text-gray-800 transition-all">Scale Team</button>
+                </div>
+
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Platform Name</label>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Group / Report Title</label>
                     <input type="text" id="platformInput" value="Instagram" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
 
-                <div id="manualMetricsList" class="space-y-3">
+                <div id="manualMetricsList" class="space-y-3 mt-4">
                     <!-- populated by JS -->
                 </div>
                 
                 <button id="addPeriodBtn" class="w-full border-2 border-dashed border-gray-300 text-gray-600 hover:bg-gray-50 py-2 rounded-lg text-sm font-semibold transition-colors flex justify-center items-center gap-1">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    Add Time Period
+                    Add Row
                 </button>
 
                 <button id="updateManualBtn" class="w-full bg-[#0B132B] hover:bg-gray-800 text-white py-3 rounded-lg font-bold transition-colors flex items-center justify-center gap-2 mt-4 shadow-md">
@@ -246,12 +264,12 @@
                         </div>
                         <div class="subtitle-wrapper">
                             <div class="cover-subtitle" contenteditable="true">Overall KPI Dashboard & Summary</div>
-                            <div class="date-inline">| <span contenteditable="true">24/07/2026</span></div>
+                            <div class="date-inline">| <span contenteditable="true" id="coverDate">24/07/2026</span></div>
                         </div>
                     </div>
 
                     <div class="cover-footer">
-                        <div contenteditable="true">Eduinx Education Services Pvt. Ltd.</div>
+                        <div contenteditable="true" id="coverCompanyName">Eduinx Education Services Pvt. Ltd.</div>
                         <div contenteditable="true">www.eduinx.com</div>
                     </div>
                 </div>
@@ -275,9 +293,9 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th contenteditable="true">Duration</th>
-                                    <th contenteditable="true">Target Reach</th>
-                                    <th contenteditable="true">Achieved Reach</th>
+                                    <th contenteditable="true" id="col-label">Duration / Name</th>
+                                    <th contenteditable="true" id="col-target">Target Reach</th>
+                                    <th contenteditable="true" id="col-achieved">Achieved Reach</th>
                                     <th>Difference</th>
                                     <th>Achievement %</th>
                                     <th>Status</th>
@@ -289,16 +307,16 @@
                         </table>
                     </div>
 
-                    <h2 class="section-title" contenteditable="true">Target vs. Achieved Reach</h2>
+                    <h2 class="section-title" contenteditable="true" id="chart-title-text">Target vs. Achieved Reach</h2>
                     <div class="chart-container">
                         <div class="chart-legend">
                             <div class="legend-item">
                                 <div class="legend-box legend-target"></div>
-                                <span contenteditable="true">Target Reach</span>
+                                <span contenteditable="true" id="leg-target">Target Reach</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-box legend-achieved"></div>
-                                <span contenteditable="true">Achieved Reach</span>
+                                <span contenteditable="true" id="leg-achieved">Achieved Reach</span>
                             </div>
                         </div>
 
@@ -307,8 +325,8 @@
                         </div>
                     </div>
 
-                    <div class="page-footer" contenteditable="true">
-                        Eduinx Education Services Pvt. Ltd. | Date: 24/07/2026 | Page 2
+                    <div class="page-footer">
+                        <span contenteditable="true" id="footerCompanyName">Eduinx Education Services Pvt. Ltd.</span> | Date: <span contenteditable="true" id="footerDate">24/07/2026</span> | Page 2
                     </div>
                 </div>
             </div>
@@ -319,6 +337,7 @@
 
     <script>
         // --- Core Math & DOM Update Logic ---
+        let currentMetricName = 'Reach';
         let currentMetrics = [
             { id: '7d', label: '7 Days', target: 450000, achieved: 796495 },
             { id: '14d', label: '14 Days', target: 800000, achieved: 1047727 },
@@ -338,6 +357,9 @@
             const kpiContainer = document.getElementById('kpiGridContainer');
             const tableContainer = document.getElementById('tableBodyContainer');
             const chartContainer = document.getElementById('barChartContainer');
+            
+            // Use internal state metric name
+            const metric = currentMetricName;
 
             let kpiHTML = '';
             let tableHTML = '';
@@ -347,7 +369,7 @@
                 // KPI
                 kpiHTML += `
                 <div class="kpi-card">
-                    <div class="kpi-title" contenteditable="true">Total Reach<br>(${d.label})</div>
+                    <div class="kpi-title" contenteditable="true">Total ${metric}<br>(${d.label})</div>
                     <div class="kpi-value" id="kpi-val-${d.id}">${formatNumber(d.achieved)}</div>
                     <div class="kpi-subtitle" id="kpi-target-${d.id}">Target: ${formatNumber(d.target)}</div>
                 </div>`;
@@ -464,7 +486,62 @@
             document.getElementById('reportPlatform').addEventListener('blur', (e) => {
                 document.getElementById('platformInput').value = e.target.innerText;
             });
+
+            // --- Sync Cover and Page 2 Footer Elements ---
+            const coverCompany = document.getElementById('coverCompanyName');
+            const footerCompany = document.getElementById('footerCompanyName');
+            const coverDate = document.getElementById('coverDate');
+            const footerDate = document.getElementById('footerDate');
+
+            coverCompany.addEventListener('input', (e) => { footerCompany.innerText = e.target.innerText; });
+            footerCompany.addEventListener('input', (e) => { coverCompany.innerText = e.target.innerText; });
+            
+            coverDate.addEventListener('input', (e) => { footerDate.innerText = e.target.innerText; });
+            footerDate.addEventListener('input', (e) => { coverDate.innerText = e.target.innerText; });
+
+            // Template Switcher Listeners
+            document.getElementById('modeSocialBtn').addEventListener('click', () => setMode('social'));
+            document.getElementById('modeScaleBtn').addEventListener('click', () => setMode('scale'));
         };
+
+        // Handle Template Switching
+        function setMode(mode) {
+            const modeSocialBtn = document.getElementById('modeSocialBtn');
+            const modeScaleBtn = document.getElementById('modeScaleBtn');
+            
+            if (mode === 'social') {
+                modeSocialBtn.className = 'flex-1 bg-white shadow-sm py-2 text-[10px] font-bold uppercase tracking-wider rounded-md text-[#0066FF] transition-all';
+                modeScaleBtn.className = 'flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-md text-gray-500 hover:text-gray-800 transition-all';
+                
+                document.getElementById('platformInput').value = 'Instagram';
+                currentMetricName = 'Reach';
+                if(document.getElementById('col-label')) document.getElementById('col-label').innerText = 'Duration';
+                
+                currentMetrics = [
+                    { id: '7d', label: '7 Days', target: 450000, achieved: 796495 },
+                    { id: '14d', label: '14 Days', target: 800000, achieved: 1047727 },
+                    { id: '30d', label: '30 Days', target: 1000000, achieved: 1214546 },
+                    { id: '90d', label: '90 Days', target: 2000000, achieved: 2512256 }
+                ];
+            } else {
+                modeScaleBtn.className = 'flex-1 bg-white shadow-sm py-2 text-[10px] font-bold uppercase tracking-wider rounded-md text-[#0066FF] transition-all';
+                modeSocialBtn.className = 'flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-md text-gray-500 hover:text-gray-800 transition-all';
+                
+                document.getElementById('platformInput').value = 'Team Performance';
+                currentMetricName = 'Tasks';
+                if(document.getElementById('col-label')) document.getElementById('col-label').innerText = 'Name';
+                
+                currentMetrics = [
+                    { id: 'navya', label: 'Navya', target: 10, achieved: 12 },
+                    { id: 'abhishk', label: 'Abhishk', target: 15, achieved: 14 },
+                    { id: 'jini', label: 'Jini', target: 8, achieved: 10 }
+                ];
+            }
+            
+            // Re-render side menu and trigger dashboard update
+            renderManualInputs();
+            document.getElementById('updateManualBtn').click();
+        }
 
         function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
@@ -485,16 +562,16 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
                         <div class="mb-2">
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase">Period Label (e.g. 7 Days)</label>
-                            <input type="text" id="man-label-${index}" value="${m.label}" class="w-full border-b border-gray-300 py-1 text-sm outline-none focus:border-blue-500 text-blue-900 font-semibold">
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase">Name / Item Label</label>
+                            <input type="text" id="man-label-${index}" value="${m.label}" class="w-full border-b border-gray-300 py-1 text-sm outline-none focus:border-blue-500 text-blue-900 font-semibold" placeholder="e.g. Navya, 7 Days">
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase">Target Reach</label>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase">Target</label>
                                 <input type="number" id="man-target-${index}" value="${m.target}" class="w-full border-b border-gray-300 py-1 text-sm outline-none focus:border-blue-500">
                             </div>
                             <div>
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase">Achieved Reach</label>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase">Achieved</label>
                                 <input type="number" id="man-achieved-${index}" value="${m.achieved}" class="w-full border-b border-gray-300 py-1 text-sm outline-none focus:border-blue-500">
                             </div>
                         </div>
@@ -509,7 +586,7 @@
         };
 
         document.getElementById('addPeriodBtn').addEventListener('click', () => {
-            currentMetrics.push({ id: 'new-' + Date.now(), label: 'New Period', target: 0, achieved: 0 });
+            currentMetrics.push({ id: 'new-' + Date.now(), label: 'New Item', target: 0, achieved: 0 });
             renderManualInputs();
             const manualSection = document.getElementById('manualModeSection');
             manualSection.scrollTop = manualSection.scrollHeight;
@@ -524,10 +601,19 @@
             });
             
             const platform = document.getElementById('platformInput').value;
+            const metric = currentMetricName;
+            
             document.getElementById('reportPlatform').innerText = platform;
+            
+            // Update table headers and legend to match the new metric name seamlessly
+            if(document.getElementById('col-target')) document.getElementById('col-target').innerText = `Target ${metric}`;
+            if(document.getElementById('col-achieved')) document.getElementById('col-achieved').innerText = `Achieved ${metric}`;
+            if(document.getElementById('leg-target')) document.getElementById('leg-target').innerText = `Target ${metric}`;
+            if(document.getElementById('leg-achieved')) document.getElementById('leg-achieved').innerText = `Achieved ${metric}`;
+            if(document.getElementById('chart-title-text')) document.getElementById('chart-title-text').innerText = `Target vs. Achieved ${metric}`;
 
             renderDashboard();
-            showToast("Report automatically updated with your numbers!");
+            showToast("Report automatically updated with your custom labels!");
         });
     </script>
 </body>
